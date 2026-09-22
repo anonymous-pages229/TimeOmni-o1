@@ -1,0 +1,121 @@
+"""Build the per-domain GRPO pools (v10 layout): split the understanding training data into
+focus/rest by domain, **one file per domain**.
+
+Domain selection criterion: among the nine small/medium domains, those where the starting SFT
+checkpoint's same-axis quick screen **did not surpass the no-CoT arm** go to focus; the domains
+that already surpassed it, plus the three large domains Phys/Telecom/Cross, go to rest. The
+FOCUS_DOMAINS constant is fixed from the quick-screen numbers of the final selected checkpoint
+before this script is run.
+
+Why one jsonl per domain: GRPO with `--pool_balance=1` samples uniformly **per file** (row weight
+= 1 / number of rows of its file), so per-domain files naturally implement "equal-weight focus on
+the focus domains / equal-weight safety net on the rest domains" (aligned with the balancing design
+of the balanced SFT pool). The three large domains are still reservoir-downsampled with the
+differentiated caps of the 12-domain pool (20k/8k/8k, seed 17) -- GRPO only draws samples, and a
+20k random subset is effectively the full set. ST-Bench rows have their think cleared (long-standing
+convention); the dataset automatically uses the no-reasoning rollout prefix for rows with empty
+think (understanding_dataset._eff_reasoning), matching their evaluation protocol, so no separate
+direct pool is needed. "Unlabeled" rows are dropped.
+
+    python chronos_llm/scripts/utils/make_grpo_domain_pools_v10.py   # lightweight, streaming
+"""
+import json
+import os
+import random
+import sys
+
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, REPO)
+
+from chronos_llm.scripts.utils.summarize_agg6_by_domain import domain_of  # noqa: E402
+
+BASE = "data/understanding"
+SOURCES = [
+    f"{BASE}/veritime/veritime_train.jsonl",
+    f"{BASE}/time-ra/time_ra_train.jsonl",
+    f"{BASE}/opentslm/ecg_qa_train.jsonl",
+    f"{BASE}/opentslm/har_train.jsonl",
+    f"{BASE}/opentslm/sleep_train.jsonl",
+    f"{BASE}/telecomts/telecomts_train.jsonl",
+    f"{BASE}/hitsr/hitsr_train.jsonl",
+    f"{BASE}/st-bench/stbench_train.jsonl",
+]
+
+# NOTE: fixed from the same-axis quick-screen numbers of the final selected starting checkpoint
+# before running.
+FOCUS_DOMAINS = {
+    "Urbanism", "Information_Technology", "Neuroscience", "Earth_Science",
+    "Meteorology", "Manufacturing", "Energy",
+}
+REST_DOMAINS = {
+    "Economics", "Bioacoustics",                      # the starting checkpoint already beats no-CoT here
+    "Physiology", "Telecommunications", "Cross_domain_Synthetic",  # the three large domains (always rest)
+}
+CAP = {"Physiology": 20000, "Telecommunications": 8000, "Cross_domain_Synthetic": 8000}
+
+OUT_DIR = f"{BASE}/derived/grpo"
+os.makedirs(OUT_DIR, exist_ok=True)
+SLUG = lambda d: d.lower().replace("_", "")
+
+rng = random.Random(17)
+reservoir = {d: [] for d in CAP}
+seen = {d: 0 for d in CAP}
+writers, counts = {}, {}
+n_drop = n_nothink = 0
+
+def sink(dom):
+    side = "focus" if dom in FOCUS_DOMAINS else "rest"
+    if dom not in writers:
+        writers[dom] = open(f"{OUT_DIR}/{side}_{SLUG(dom)}.jsonl", "w")
+    return writers[dom]
+
+for src in SOURCES:
+    is_stb = "stbench" in os.path.basename(src)
+    for line in open(src):
+        row = json.loads(line)
+        it = row.get("input_text")
+        probe = dict(row, input_text="\n".join(map(str, it)) if isinstance(it, list) else it)
+        d = domain_of(probe)
+        if d == "Unlabeled":
+            n_drop += 1
+            continue
+        assert d in FOCUS_DOMAINS or d in REST_DOMAINS, f"unassigned domain: {d}"
+        if is_stb and row.get("think"):
+            row["think"] = ""
+            line = json.dumps(row, ensure_ascii=False) + "\n"
+            n_nothink += 1
+        if d in CAP:  # reservoir for the three large domains
+            seen[d] += 1
+            pool = reservoir[d]
+            if len(pool) < CAP[d]:
+                pool.append(line)
+            else:
+                j = rng.randint(0, seen[d] - 1)
+                if j < CAP[d]:
+                    pool[j] = line
+            continue
+        sink(d).write(line if line.endswith("\n") else line + "\n")
+        counts[d] = counts.get(d, 0) + 1
+
+for d, pool in reservoir.items():
+    w = sink(d)
+    for line in pool:
+        w.write(line if line.endswith("\n") else line + "\n")
+    counts[d] = len(pool)
+
+for w in writers.values():
+    w.close()
+
+cfg = {"focus": [], "rest": []}
+for d in sorted(counts):
+    side = "focus" if d in FOCUS_DOMAINS else "rest"
+    cfg[side].append(f"{OUT_DIR}/{side}_{SLUG(d)}.jsonl")
+    print(f"{side:5s} {d:26s} {counts[d]:>7d} rows")
+print(f"dropped {n_drop} Unlabeled rows; cleared think on {n_nothink} ST-Bench rows")
+
+for side in ("focus", "rest"):
+    p = f"{REPO}/chronos_llm/configs/understanding_train_jsonl_v10_{side}.txt"
+    with open(p, "w") as f:
+        f.write(f"# v10 GRPO {side} pool (generated by make_grpo_domain_pools_v10.py, one file per domain for balancing)\n")
+        f.write("\n".join(cfg[side]) + "\n")
+    print(f"[written] {p} ({len(cfg[side])} files)")

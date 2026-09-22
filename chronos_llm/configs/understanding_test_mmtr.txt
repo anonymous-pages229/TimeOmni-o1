@@ -1,0 +1,21 @@
+# MMTR understanding test sets (70,630 samples in the paper). Each source keeps its official test
+# split (TelecomTS has none: the last 5% of rows are held out, split by row so the six QA pairs of a
+# row never straddle train/test). The files shipped in this repository are the full test sets,
+# except ECG-QA which is subsampled (see data/understanding/MANIFEST.json); regenerate the full
+# files with chronos_llm/scripts/utils/convert_*.py.
+# `ori_path` inside the jsonl is relative to the repository root (no base_dir needed when running from it).
+
+# OpenTSLM (ECG-QA 41,093 / HAR 8,199 / Sleep 928)
+data/understanding/opentslm/ecg_qa_test.jsonl
+data/understanding/opentslm/har_test.jsonl
+data/understanding/opentslm/sleep_test.jsonl
+# ST-Bench ST-Test (2,993)
+data/understanding/st-bench/stbench_test.jsonl
+# VeriTime (1,155)
+data/understanding/veritime/veritime_test.jsonl
+# TelecomTS (8,000 QA)
+data/understanding/telecomts/telecomts_test.jsonl
+# HiTSR L2 + L3 (5,472)
+data/understanding/hitsr/hitsr_test.jsonl
+# Time-RA / RATs40K (2,790 after removing officially mislabelled items)
+data/understanding/time-ra/time_ra_test.jsonl

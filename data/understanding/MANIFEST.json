@@ -1,0 +1,109 @@
+{
+  "opentslm/ecg_qa_test.jsonl": {
+    "rows_shipped": 2927,
+    "rows_full_test": 41093,
+    "signal_files_shipped": 250,
+    "signal_files_full_test": 3207,
+    "signal_mb": 60.0,
+    "tasks": {
+      "ecg_qa_cot": 2927
+    },
+    "sampling": "random subset of 250 recordings (seed 0); all QA rows of a kept recording are shipped",
+    "signals_dir": "opentslm/ptbxl_signals"
+  },
+  "opentslm/har_test.jsonl": {
+    "rows_shipped": 8199,
+    "rows_full_test": 8199,
+    "signal_files_shipped": 8199,
+    "signal_files_full_test": 8199,
+    "signal_mb": 13.6,
+    "tasks": {
+      "har_cot": 8199
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "opentslm/har_signals"
+  },
+  "opentslm/sleep_test.jsonl": {
+    "rows_shipped": 928,
+    "rows_full_test": 928,
+    "signal_files_shipped": 928,
+    "signal_files_full_test": 928,
+    "signal_mb": 1.6,
+    "tasks": {
+      "sleep_cot": 928
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "opentslm/sleep_signals"
+  },
+  "st-bench/stbench_test.jsonl": {
+    "rows_shipped": 2993,
+    "rows_full_test": 2993,
+    "signal_files_shipped": 2993,
+    "signal_files_full_test": 2993,
+    "signal_mb": 11.9,
+    "tasks": {
+      "stbench_entity": 1194,
+      "stbench_correlation": 1592,
+      "stbench_etiological": 207
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "st-bench/signals"
+  },
+  "veritime/veritime_test.jsonl": {
+    "rows_shipped": 1155,
+    "rows_full_test": 1155,
+    "signal_files_shipped": 1155,
+    "signal_files_full_test": 1155,
+    "signal_mb": 2.3,
+    "tasks": {
+      "veritime_Scenario_attribution": 176,
+      "veritime_Inferential_calculation": 105,
+      "veritime_Anomaly_detection": 180,
+      "veritime_RCW": 200,
+      "veritime_CTU": 144,
+      "veritime_ECG": 200,
+      "veritime_EMG": 150
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "veritime/signals"
+  },
+  "telecomts/telecomts_test.jsonl": {
+    "rows_shipped": 8000,
+    "rows_full_test": 8000,
+    "signal_files_shipped": 1600,
+    "signal_files_full_test": 1600,
+    "signal_mb": 13.3,
+    "tasks": {
+      "telecomts_network": 6400,
+      "telecomts_anomalies": 1600
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "telecomts/signals"
+  },
+  "hitsr/hitsr_test.jsonl": {
+    "rows_shipped": 5472,
+    "rows_full_test": 5472,
+    "signal_files_shipped": 5472,
+    "signal_files_full_test": 5472,
+    "signal_mb": 9.8,
+    "tasks": {
+      "hitsr_l2": 5071,
+      "hitsr_l3": 401
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "hitsr/signals"
+  },
+  "time-ra/time_ra_test.jsonl": {
+    "rows_shipped": 2790,
+    "rows_full_test": 2790,
+    "signal_files_shipped": 2790,
+    "signal_files_full_test": 2790,
+    "signal_mb": 1.4,
+    "tasks": {
+      "time_ra_uni": 2244,
+      "time_ra_multi": 546
+    },
+    "sampling": "full official test split as used in the paper",
+    "signals_dir": "time-ra/signals"
+  }
+}
